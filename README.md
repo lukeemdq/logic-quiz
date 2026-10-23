@@ -11,6 +11,20 @@ Modelo do quiz usado nas `fa-fe6-hf-v3` e `fb-fe123-hf-v3`, pronto para levar pa
 5. **Roda o loading.** Depois da última pergunta, aparece um anel de 0 a 100% ("Calculating your personalized protocol..."), em uns 4s.
 6. **Fecha e mostra a página.** A VSL do quiz sai do DOM (para de tocar), roda o `onFinish` e o quiz some.
 
+## Antes de implementar: perguntas obrigatórias
+
+Regra: antes de colocar o quiz numa página, pergunte tudo isto para quem pediu. Só comece a implementar com as respostas na mão. Não invente perguntas, cores, logo nem vídeo.
+
+1. **Página:** em qual página (pasta/arquivo) o quiz entra? Qual é o container principal da página (vai no `pageSelector`)?
+2. **Perguntas:** quais são as perguntas e as opções de cada uma? Se não houver, use as do modelo do [index.html](index.html) sem mudar o texto.
+3. **Parâmetro na URL:** alguma resposta precisa ir para a URL (ex.: `?variant=`)? Qual pergunta e qual nome de parâmetro?
+4. **VSL do quiz:** o quiz tem vídeo antes das perguntas? Se sim, qual o embed do vturb? Precisa ser um vídeo diferente da VSL da oferta.
+5. **VSL da oferta:** a página tem VSL principal? Ela precisa carregar só depois do quiz (`loadOfferVsl()`)? Tem script de delay?
+6. **Visual:** quais cores usar (ou seguir a identidade da página)? Tem layout de referência (Figma, print, outra página)?
+7. **Logo:** qual arquivo de logo vai no header do quiz?
+8. **Textos fixos:** título ("Personalized Protocol"), texto do loading e copyright do footer: manter ou trocar? Em qual idioma?
+9. **Exit popup e checkout:** a página tem exit popup? O parâmetro precisa chegar no checkout (ver [Parâmetro na URL e checkout](#parâmetro-na-url-e-checkout-pagamerican))?
+
 ## Como implementar numa página
 
 O `index.html` tem três blocos marcados com `===== Quiz: ... =====`.
