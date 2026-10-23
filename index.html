@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quiz — modelo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ===== Quiz: CSS (copiar inteiro para a página) ===== */
+
+      /* Cores e medidas do design. Troque aqui para adaptar a outro produto. */
+      #quiz {
+        --quiz-bg: #f5f4ed;
+        --quiz-header-bg: #050505;
+        --quiz-footer-bg: #101010;
+        --quiz-text: #101010;
+        --quiz-muted: #6e7278;
+        --quiz-card: #fff;
+        --quiz-accent: #54db3f;
+        --quiz-progress: #04ac48;
+        --quiz-track: #cdcdcd;
+        --quiz-font: "Inter", sans-serif;
+      }
+
+      /* Esconde barra + perguntas antes do CSS carregar (some quando a VSL termina). */
+      [data-quiz-locked] {
+        display: none;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @keyframes quiz-stepIn {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      #quiz {
+        position: fixed;
+        inset: 0;
+        z-index: 10004;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background: var(--quiz-bg);
+        color: var(--quiz-text);
+        font-family: var(--quiz-font);
+        transition: opacity 0.4s ease;
+      }
+
+      #quiz *,
+      #quiz *::before,
+      #quiz *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      #quiz.closing {
+        opacity: 0;
+      }
+
+      #quiz .quiz-container {
+        width: min(528px, calc(100% - 32px));
+        margin-inline: auto;
+      }
+
+      .quiz-screen {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+      }
+
+      .quiz-header {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        height: 103px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        background: var(--quiz-header-bg);
+      }
+
+      .quiz-header img {
+        display: block;
+        max-height: 56px;
+      }
+
+      .quiz-header .name {
+        color: #fff;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+
+      .quiz-hero {
+        flex: 1 0 auto;
+        padding: 24px 0 80px;
+        background: var(--quiz-bg);
+      }
+
+      .quiz-hero .quiz-container {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .quiz-hero h2 {
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 1.35;
+      }
+
+      .quiz-vsl {
+        width: 100%;
+        min-height: 1px;
+      }
+
+      .quiz-progress {
+        height: 8px;
+        margin-bottom: 24px;
+        overflow: hidden;
+        border-radius: 4px;
+        background: var(--quiz-track);
+      }
+
+      .quiz-progress span {
+        display: block;
+        width: 0;
+        height: 100%;
+        background: var(--quiz-progress);
+        transition: width 0.5s ease;
+      }
+
+      .quiz-question {
+        animation: quiz-stepIn 0.4s ease both;
+      }
+
+      .quiz-question .label {
+        color: var(--quiz-muted);
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.35;
+        text-transform: uppercase;
+      }
+
+      .quiz-question h3 {
+        margin-top: 12px;
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 1.35;
+        outline: none;
+      }
+
+      .quiz-question .options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      /* Depois da escolha, as demais opções ficam cinza. */
+      .quiz-question.answered .quiz-option:not(.selected) {
+        border-color: transparent;
+        color: var(--quiz-muted);
+      }
+
+      .quiz-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid transparent;
+        border-radius: 16px;
+        background: var(--quiz-card);
+        color: var(--quiz-text);
+        font: inherit;
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.35;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 0.2s, color 0.2s;
+      }
+
+      /* Círculo da opção; vira check verde quando selecionada. */
+      .quiz-option::before {
+        content: "";
+        flex-shrink: 0;
+        width: 37px;
+        height: 37px;
+        border-radius: 50%;
+        background: var(--quiz-bg) center / 20px no-repeat;
+      }
+
+      .quiz-option.selected {
+        border-color: var(--quiz-accent);
+      }
+
+      .quiz-option.selected::before {
+        background-color: var(--quiz-accent);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 17'%3E%3Cpath fill='%23fff' d='M17.2.8 8.8 10.3 4.4 5.4a2.3 2.3 0 0 0-3.4 0 2.9 2.9 0 0 0 0 3.9l6.1 6.9a2.3 2.3 0 0 0 3.3 0L20.6 4.7a2.9 2.9 0 0 0 0-3.9 2.3 2.3 0 0 0-3.4 0Z'/%3E%3C/svg%3E");
+      }
+
+      @media (hover: hover) {
+        .quiz-option:hover {
+          border-color: color-mix(in srgb, var(--quiz-accent) 50%, transparent);
+        }
+      }
+
+      .quiz-option:focus-visible {
+        outline: 3px solid #1767c5;
+        outline-offset: 3px;
+      }
+
+      .quiz-footer {
+        flex-shrink: 0;
+        padding: 25px 16px;
+        background: var(--quiz-footer-bg);
+        color: #fff;
+        font-size: 18px;
+        text-align: center;
+      }
+
+      .quiz-loading {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        min-height: 100%;
+        padding: 24px 16px;
+        background: #fff;
+        text-align: center;
+      }
+
+      .quiz-loading .loader {
+        position: relative;
+        width: 88px;
+        height: 88px;
+      }
+
+      .quiz-loading svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .quiz-loading circle {
+        fill: none;
+        stroke-width: 16;
+      }
+
+      .quiz-loading .track {
+        stroke: #d9d9d9;
+      }
+
+      /* pathLength="100": o offset é 100 − porcentagem. */
+      .quiz-loading .fill {
+        stroke: var(--quiz-progress);
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+      }
+
+      .quiz-loading .loader span {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .quiz-loading p {
+        max-width: 13.5em;
+        font-size: 18px;
+        line-height: 1.35;
+      }
+
+      @media (max-width: 620px) {
+        .quiz-header {
+          height: 72px;
+        }
+
+        .quiz-hero {
+          padding-bottom: 48px;
+        }
+
+        .quiz-question .label {
+          font-size: 16px;
+        }
+
+        .quiz-question h3 {
+          font-size: 22px;
+        }
+
+        .quiz-option {
+          font-size: 18px;
+        }
+
+        .quiz-footer {
+          font-size: 14px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #quiz,
+        #quiz * {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      /* ===== Só para este exemplo: página de oferta fictícia ===== */
+      body {
+        margin: 0;
+        font-family: "Inter", sans-serif;
+      }
+
+      .demo-offer {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 48px 16px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ===== Quiz: HTML (colar como primeiro elemento do <body>) ===== -->
+    <div id="quiz" role="dialog" aria-modal="true" aria-labelledby="quiz-q1">
+      <div class="quiz-screen">
+        <div class="quiz-header">
+          <!-- Logo do produto: troque por <img src="..." alt="Marca" />. -->
+          <span class="name">BRAND</span>
+        </div>
+
+        <div class="quiz-hero">
+          <div class="quiz-container">
+            <!-- VSL do quiz: cole aqui o embed completo do vturb (elemento + script).
+                 Com um vturb-smartplayer aqui, as perguntas só liberam quando o vídeo termina.
+                 Sem player, as perguntas aparecem direto. -->
+            <div class="quiz-vsl"></div>
+
+            <!-- data-quiz-locked: barra + perguntas ficam escondidas até a VSL terminar. -->
+            <div class="quiz-steps" data-quiz-locked>
+              <div
+                class="quiz-progress"
+                role="progressbar"
+                aria-label="Quiz progress"
+                aria-valuemin="1"
+                aria-valuemax="3"
+                aria-valuenow="1"
+              >
+                <span></span>
+              </div>
+
+              <!-- Uma <section class="quiz-question"> por pergunta; só a primeira sem hidden. -->
+              <section class="quiz-question" aria-labelledby="quiz-q1">
+                <h2>Personalized Protocol</h2>
+                <p class="label">Question 1</p>
+                <h3 id="quiz-q1" tabindex="-1">What is your age?</h3>
+                <div class="options">
+                  <button class="quiz-option" type="button" data-value="A">A) Under 40</button>
+                  <button class="quiz-option" type="button" data-value="B">B) 40 to 49</button>
+                  <button class="quiz-option" type="button" data-value="C">C) 50 or older</button>
+                </div>
+              </section>
+
+              <section class="quiz-question" aria-labelledby="quiz-q2" hidden>
+                <p class="label">Question 2</p>
+                <h3 id="quiz-q2" tabindex="-1">How often do you exercise?</h3>
+                <div class="options">
+                  <button class="quiz-option" type="button" data-value="A">A) Rarely</button>
+                  <button class="quiz-option" type="button" data-value="B">B) A few times a week</button>
+                  <button class="quiz-option" type="button" data-value="C">C) Every day</button>
+                </div>
+              </section>
+
+              <!-- data-param: a resposta vira parâmetro na URL (aqui ?variant=A|B|C). -->
+              <section
+                class="quiz-question"
+                aria-labelledby="quiz-q3"
+                data-param="variant"
+                hidden
+              >
+                <p class="label">Question 3</p>
+                <h3 id="quiz-q3" tabindex="-1">
+                  What would you most like to improve right now?
+                </h3>
+                <div class="options">
+                  <button class="quiz-option" type="button" data-value="A">A) Energy</button>
+                  <button class="quiz-option" type="button" data-value="B">B) Sleep</button>
+                  <button class="quiz-option" type="button" data-value="C">C) Focus</button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <div class="quiz-footer">
+          <p>Copyright © 2026 Brand. All rights reserved.</p>
+        </div>
+      </div>
+
+      <div class="quiz-loading" hidden>
+        <div
+          class="loader"
+          role="progressbar"
+          aria-labelledby="quiz-loading-text"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+        >
+          <svg viewBox="0 0 88 88" aria-hidden="true">
+            <circle class="track" cx="44" cy="44" r="36" />
+            <circle class="fill" cx="44" cy="44" r="36" pathLength="100" />
+          </svg>
+          <span data-loading-value>0%</span>
+        </div>
+        <p id="quiz-loading-text">Calculating your personalized protocol...</p>
+      </div>
+    </div>
+
+    <!-- Só para este exemplo: o conteúdo normal da página fica atrás do quiz. -->
+    <main id="page-content" class="demo-offer">
+      <h1>Offer page</h1>
+      <p>Esta é a página que aparece depois do quiz.</p>
+      <p>Parâmetros atuais da URL: <code id="demo-params"></code></p>
+    </main>
+
+    <!-- ===== Quiz: JS (colar antes do </body>, depois do HTML do quiz) ===== -->
+    <script>
+      (() => {
+        const QUIZ_CONFIG = {
+          // Conteúdo da página que fica atrás do quiz (fica inert enquanto ele está aberto).
+          pageSelector: "#page-content",
+          // Tempo (ms) mostrando a opção marcada antes de ir para a próxima pergunta.
+          answerDelay: 450,
+          // Loading: [duração em ms, % ao fim do trecho]. Arrancos e pausas = "calculando".
+          loadingSteps: [[700, 34], [500, 41], [900, 68], [600, 74], [800, 100]],
+          // Roda quando o quiz fecha. Ex.: carregar a VSL da oferta (ver README).
+          onFinish: () => window.loadOfferVsl?.(),
+        };
+
+        const quiz = document.getElementById("quiz");
+        const quizScreen = quiz.querySelector(".quiz-screen");
+        const steps = quiz.querySelector(".quiz-steps");
+        const questions = [...quiz.querySelectorAll(".quiz-question")];
+        const progressBar = quiz.querySelector(".quiz-progress");
+        const loading = quiz.querySelector(".quiz-loading");
+        const page = document.querySelector(QUIZ_CONFIG.pageSelector);
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        function showQuestion(index) {
+          questions.forEach((question, i) => { question.hidden = i !== index; });
+          progressBar.firstElementChild.style.width = `${((index + 1) / questions.length) * 100}%`;
+          progressBar.setAttribute("aria-valuemax", questions.length);
+          progressBar.setAttribute("aria-valuenow", index + 1);
+          progressBar.setAttribute("aria-valuetext", `Question ${index + 1} of ${questions.length}`);
+        }
+
+        // Pergunta com data-param: a resposta vai para a URL sem recarregar a página.
+        function saveAnswer(question, option) {
+          const { param } = question.dataset;
+          if (!param) return;
+          const url = new URL(window.location.href);
+          url.searchParams.set(param, option.dataset.value);
+          try {
+            history.replaceState(history.state, "", url);
+          } catch { /* Sem history, segue sem o parâmetro. */ }
+        }
+
+        function unlockQuestions() {
+          if (!steps.hasAttribute("data-quiz-locked")) return;
+          steps.removeAttribute("data-quiz-locked");
+          steps.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+        }
+
+        function runLoading(done) {
+          const fill = loading.querySelector(".fill");
+          const value = loading.querySelector("[data-loading-value]");
+          const loader = loading.querySelector('[role="progressbar"]');
+          const stops = QUIZ_CONFIG.loadingSteps;
+          let step = 0;
+          let from = 0;
+          let stepStart = performance.now();
+          function frame(now) {
+            const [duration, to] = stops[step];
+            const t = Math.min(1, (now - stepStart) / duration);
+            const percent = Math.round(from + (to - from) * (1 - (1 - t) ** 3));
+            fill.style.strokeDashoffset = 100 - percent;
+            value.textContent = `${percent}%`;
+            loader.setAttribute("aria-valuenow", percent);
+            if (t === 1) {
+              from = to;
+              step++;
+              stepStart = now;
+            }
+            if (step < stops.length) requestAnimationFrame(frame);
+            else window.setTimeout(done, 600);
+          }
+          requestAnimationFrame(frame);
+        }
+
+        function closeQuiz() {
+          QUIZ_CONFIG.onFinish?.();
+          quiz.classList.add("closing");
+          window.setTimeout(() => {
+            quiz.hidden = true;
+            if (page) page.inert = false;
+            document.body.style.overflow = "";
+          }, reducedMotion ? 0 : 400);
+        }
+
+        questions.forEach((question, index) => {
+          question.querySelectorAll(".quiz-option").forEach((option) => {
+            option.addEventListener("click", () => {
+              if (question.classList.contains("answered")) return;
+              question.classList.add("answered");
+              option.classList.add("selected");
+              saveAnswer(question, option);
+              window.setTimeout(() => {
+                const next = questions[index + 1];
+                if (next) {
+                  showQuestion(index + 1);
+                  next.querySelector("h3").focus({ preventScroll: true });
+                  if (next.getBoundingClientRect().top < 0) {
+                    next.scrollIntoView({ block: "start", behavior: reducedMotion ? "auto" : "smooth" });
+                  }
+                  return;
+                }
+                // A VSL do quiz sai do DOM para o vídeo parar de tocar por trás da oferta.
+                quiz.querySelector(".quiz-vsl")?.remove();
+                quizScreen.hidden = true;
+                loading.hidden = false;
+                quiz.scrollTop = 0;
+                runLoading(closeQuiz);
+              }, reducedMotion ? 0 : QUIZ_CONFIG.answerDelay);
+            });
+          });
+        });
+
+        // Libera as perguntas no fim da VSL do quiz. O vturb só emite video:ended na
+        // reprodução de verdade (o autoplay mudo de prévia não conta). Sem player, libera direto.
+        const quizPlayer = quiz.querySelector(".quiz-vsl vturb-smartplayer");
+        if (quizPlayer) quizPlayer.addEventListener("video:ended", unlockQuestions, { once: true });
+        else unlockQuestions();
+
+        if (page) page.inert = true;
+        document.body.style.overflow = "hidden";
+        showQuestion(0);
+      })();
+    </script>
+
+    <!-- Só para este exemplo: mostra os parâmetros da URL na "oferta". -->
+    <script>
+      window.loadOfferVsl = () => {
+        document.getElementById("demo-params").textContent = location.search || "(nenhum)";
+      };
+    </script>
+  </body>
+</html>
